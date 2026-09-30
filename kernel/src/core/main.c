@@ -4,8 +4,11 @@
  * (retained per assignment instructions); hello world over UART0 is Task 1.
  */
 #include "minemu/boot.h"
+#include "minemu/irq.h"
+#include "minemu/platform.h"
 #include "minemu/trap.h"
 #include "minemu/trace.h"
+#include "msh.h"
 #include "uart.h"
 #include "kprintf.h"
 
@@ -25,6 +28,13 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
 
     /* Task 1: kernel-mode hello world on the UART0 console. */
     kprintf("hello world\n");
+
+    /* Task 2: interrupt-driven input, then the msh shell.
+     * Devices are configured before the CPU accepts IRQs. */
+    uart0_init();
+    MINEMU_INTERRUPT->enable = UINT32_C(1) << MINEMU_IRQ_UART0;
+    minemu_irq_enable();
+    msh_run();
 
     minemu_fail_stop();
 }
