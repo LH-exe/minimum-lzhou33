@@ -10,8 +10,10 @@ CORE_OBJECT := $(BUILD)/core/main.o
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
 	$(BUILD)/runtime/exception.o \
+	$(BUILD)/runtime/kprintf.o \
 	$(BUILD)/runtime/memory.o \
 	$(BUILD)/runtime/trace.o \
+	$(BUILD)/runtime/uart.o \
 	$(BUILD)/startup/boot.o \
 	$(BUILD)/startup/vectors.o
 

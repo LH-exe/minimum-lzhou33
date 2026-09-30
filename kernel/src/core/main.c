@@ -1,6 +1,13 @@
+/* Author: Lin Han Zhou (lzhou33)
+ * CS 492 - Homework 1, Task 1
+ * Kernel entry point. Boot-info validation is supplied template code
+ * (retained per assignment instructions); hello world over UART0 is Task 1.
+ */
 #include "minemu/boot.h"
 #include "minemu/trap.h"
 #include "minemu/trace.h"
+#include "uart.h"
+#include "kprintf.h"
 
 void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
     if ((uintptr_t)boot_info != MINEMU_BOOT_INFO_VADDR ||
@@ -15,5 +22,9 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
         minemu_fail_stop();
     }
     minemu_trace_event(1);
+
+    /* Task 1: kernel-mode hello world on the UART0 console. */
+    kprintf("hello world\n");
+
     minemu_fail_stop();
 }
