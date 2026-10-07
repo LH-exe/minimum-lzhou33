@@ -89,7 +89,7 @@ static bool map_system_rom(const struct minemu_boot_info *boot_info) {
 
     volatile uint32_t *directory = active_page_directory();
     for (uint32_t table = 0; table < table_count; ++table) {
-        zero_bytes(system_rom_tables[table], sizeof(system_rom_tables[table]));
+        /* system_rom_tables lives in BSS, already zeroed by boot. */
         uint32_t remaining = page_count - table * 1024U;
         uint32_t entries = remaining < 1024U ? remaining : 1024U;
         for (uint32_t index = 0; index < entries; ++index) {
@@ -157,9 +157,7 @@ static int user_page_index(uint32_t page_vaddr, uint32_t flags, bool create) {
     size_t index = user_page_count++;
     user_page_vaddrs[index] = page_vaddr;
     user_page_flags[index] = flags;
-    if (index < MAX_USER_IMAGE_PAGES) {
-        zero_bytes(user_image_pages[index], MINEMU_PAGE_SIZE);
-    }
+    /* Backing pages live in BSS, already zeroed by boot. */
     return (int)index;
 }
 
@@ -212,8 +210,8 @@ static bool load_user_module(const struct minemu_boot_info *boot_info,
     const struct minemu_module_segment *segments =
         (const struct minemu_module_segment *)(image + module->segment_table_offset);
     bool entry_is_executable = false;
-    zero_bytes(user_page_table, sizeof(user_page_table));
-    zero_bytes(user_stack, sizeof(user_stack));
+    /* user_page_table, user_stack, and the page records live in BSS,
+     * already zeroed by boot; user_page_count starts at 0. */
     user_page_count = 0;
 
     for (uint32_t index = 0; index < module->segment_count; ++index) {
@@ -233,7 +231,6 @@ static bool load_user_module(const struct minemu_boot_info *boot_info,
 
         uint32_t pte_flags = pte_flags_from_segment(segment->flags);
         if (!prepare_user_range(segment->virtual_address, segment->memory_size, pte_flags) ||
-            !write_user_range(segment->virtual_address, NULL, segment->memory_size) ||
             !write_user_range(segment->virtual_address, image + segment->data_offset,
                               segment->file_size)) {
             return false;
