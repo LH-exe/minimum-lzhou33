@@ -7,13 +7,19 @@ BUILD := build
 KERNEL := $(BUILD)/minimum-kernel.elf
 RUNTIME := $(BUILD)/libminemu_kernel.a
 
-CORE_OBJECT := $(BUILD)/core/main.o $(BUILD)/core/msh.o
+CORE_OBJECT := $(BUILD)/core/main.o $(BUILD)/core/msh.o $(BUILD)/core/usermode.o
 # Linked explicitly rather than via the archive: these strong definitions
 # must override the weak stubs in exception.c. Archive members are only
 # pulled to satisfy undefined symbols, and exception.o precedes them in the
 # archive, so routing these through RUNTIME_OBJECTS silently links the weak
 # fail_stop stubs instead.
 IRQ_OBJECTS := $(BUILD)/runtime/irq.o $(BUILD)/startup/irq.o
+# Same reason as IRQ_OBJECTS: svc/user/ioctl/usermode provide strong
+# definitions that must override the weak stubs in exception.c.
+SVC_OBJECTS := \
+	$(BUILD)/runtime/ioctl.o \
+	$(BUILD)/startup/svc.o \
+	$(BUILD)/startup/user.o
 RUNTIME_OBJECTS := \
 	$(BUILD)/runtime/block.o \
 	$(BUILD)/runtime/exception.o \
@@ -24,7 +30,7 @@ RUNTIME_OBJECTS := \
 	$(BUILD)/startup/boot.o \
 	$(BUILD)/startup/vectors.o
 
-OBJECTS := $(CORE_OBJECT) $(IRQ_OBJECTS) $(RUNTIME_OBJECTS)
+OBJECTS := $(CORE_OBJECT) $(IRQ_OBJECTS) $(SVC_OBJECTS) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)
 
 ARCH_FLAGS := -mcpu=cortex-a9 -marm -mfloat-abi=soft
@@ -66,9 +72,9 @@ $(RUNTIME): $(RUNTIME_OBJECTS)
 	@mkdir -p $(dir $@)
 	$(AR) rcs $@ $^
 
-$(KERNEL): $(CORE_OBJECT) $(IRQ_OBJECTS) $(RUNTIME) linker/kernel.ld
+$(KERNEL): $(CORE_OBJECT) $(IRQ_OBJECTS) $(SVC_OBJECTS) $(RUNTIME) linker/kernel.ld
 	@mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) $(CORE_OBJECT) $(IRQ_OBJECTS) $(RUNTIME) $(LIBGCC) -o $@
+	$(CC) $(LDFLAGS) $(CORE_OBJECT) $(IRQ_OBJECTS) $(SVC_OBJECTS) $(RUNTIME) $(LIBGCC) -o $@
 
 $(BUILD)/core/%.o: src/core/%.c
 	@mkdir -p $(dir $@)
